@@ -1,0 +1,38 @@
+# Passwordless root for exactly the two tools that need raw device access, and
+# nothing else.
+#
+# Telegraf itself keeps running as the unprivileged `telegraf` user that the
+# upstream entrypoint drops to. Only `smartctl` and `nvme` cross into root, and
+# only when inputs.smartctl or inputs.smart is configured with `use_sudo = true`.
+# See README.md, "Root or sudo", for why the image does not simply run Telegraf
+# as root.
+#
+# Each tool is listed twice because sudo matches the command path *literally*,
+# not after resolving symlinks: a rule naming /usr/sbin/smartctl does not
+# authorize /usr/bin/smartctl even though the latter is a symlink to it. Alpine
+# installs both tools under /usr/sbin, which is where inputs.smartctl looks;
+# inputs.smart defaults to /usr/bin instead, and the Dockerfile adds symlinks
+# there so both plugins work without being told where to look. Those symlinks
+# are only reachable through sudo if the policy names them, hence four entries
+# for two binaries.
+#
+# No argument list is pinned: these plugins call smartctl with a scan, a
+# per-device query and a `--nocheck` mode whose arguments depend on plugin
+# configuration, and inputs.smart additionally calls vendor-specific `nvme`
+# subcommands when `enable_extensions` is on — so an argument whitelist would
+# have to be re-derived on every Telegraf release. Restricting *which* binaries
+# may be run is the boundary that holds; both of these read and write storage
+# devices by design, so constraining their arguments would buy little even if it
+# were stable.
+telegraf ALL=(root) NOPASSWD: /usr/sbin/smartctl, /usr/sbin/nvme, \
+                              /usr/bin/smartctl, /usr/bin/nvme
+
+# Telegraf runs with no controlling terminal under tini, and the container has
+# no resolvable hostname. Neither default applies in a container; both would
+# otherwise turn every sudo call into an error.
+Defaults:telegraf !requiretty
+Defaults:telegraf !fqdn
+
+# Keep the environment sudo hands the tools minimal and predictable rather than
+# inheriting Telegraf's.
+Defaults:telegraf secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"

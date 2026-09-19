@@ -1,0 +1,68 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_context7_context7__*"
+    ]
+  },
+  "sandbox": {
+    "allowUnsandboxedCommands": false,
+    "autoAllowBashIfSandboxed": false,
+    "enabled": true,
+    "failIfUnavailable": true,
+    "enableWeakerNetworkIsolation": true,
+    "network": {
+      "allowedDomains": [
+        "api.github.com",
+        "auth.docker.io",
+        "github.com",
+        "index.docker.io",
+        "production.cloudflare.docker.com",
+        "registry-1.docker.io",
+        "objects.githubusercontent.com",
+        "uploads.github.com"
+      ],
+      "allowAllUnixSockets": true,
+      "allowLocalBinding": true,
+      "allowMachLookup": [
+        "2BUA8C4S2C.com.1password.*",
+        "com.1password.*"
+      ],
+      "allowUnixSockets": [
+        "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock",
+        "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/s.sock"
+      ]
+    },
+    "filesystem": {
+      "denyRead": [
+        "~/"
+      ],
+      "allowRead": [
+        ".",
+        "~/.cache/rubocop_cache",
+        "~/.claude",
+        "~/.config/gh",
+        "~/.config/git",
+        "~/.config/op",
+        "~/.config/vsrun",
+        "~/.gitconfig",
+        "~/.gitignore_global",
+        "~/.local/bin",
+        "~/.rbenv",
+        "~/CLAUDE.md",
+        "~/Library/Caches/dprint",
+        "~/Library/Group Containers/2BUA8C4S2C.com.1password"
+      ],
+      "allowWrite": [
+        "~/.cache/rubocop_cache"
+      ]
+    }
+  },
+  "enabledPlugins": {
+    "claude-md-management@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "ralph-loop@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true
+  }
+}
