@@ -1,0 +1,18 @@
+[package]
+name = "node-tool"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "Runs the node's own smartctl, LVM and zpool tools for Telegraf, and nothing else"
+
+# No dependencies, on purpose: this binary carries capabilities, and every crate
+# would be more code running with them and another pin to keep.
+[dependencies]
+# Small and self-contained: it only checks arguments and execs lvm.
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

@@ -1,0 +1,49 @@
+# Build every version of ours with Telegraf releases that appeared since
+#
+# Runs the release workflow on every version tag of ours, vX.Y.Z, oldest first,
+# each waited for. That workflow builds whatever is not yet on Docker Hub, so a
+# day without a new Telegraf release builds nothing. Writes nothing to git. See
+# README.md, "Building every Telegraf release".
+name: Mirror
+
+on:
+  schedule:
+    - cron: "23 5 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: List the version tags of ours, without running the release workflow
+        type: boolean
+        default: false
+
+permissions: {}
+
+# One run at a time, queued rather than cancelled.
+concurrency:
+  group: mirror
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    name: Run the release workflow on every version of ours
+    runs-on: ubuntu-24.04
+    # Serial by design, and each release run is waited for.
+    timeout-minutes: 360
+    permissions:
+      contents: read # list the version tags
+      actions: write # dispatch the release workflow and watch it
+    steps:
+      # Every tag: they are the versions of ours.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+
+      - name: Run the release workflow on every version tag
+        env:
+          DRY_RUN: ${{ inputs.dry_run || false }}
+          GH_TOKEN: ${{ github.token }}
+        run: rake mirror:sync

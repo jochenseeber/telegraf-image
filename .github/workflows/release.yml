@@ -1,0 +1,110 @@
+# Build and publish a version of ours with every tracked Telegraf release
+#
+# Runs on a version tag of ours, v<own>: for every telegraf:<version>-alpine at
+# or above the Rakefile's floor whose build is not yet on Docker Hub, builds,
+# verifies and pushes jochen/telegraf:<telegraf>_image.<own>, oldest first.
+# Writes nothing to git. See README.md, "Building every Telegraf release".
+#
+# Requires these secrets on the release environment:
+#   DOCKERHUB_USERNAME  the Docker Hub account that owns the namespace
+#   DOCKERHUB_TOKEN     an access token for it, not the account password
+name: Release
+
+on:
+  # Release tags of ours only: vX.Y.Z, never a development version or the
+  # retired -alpine.N tags. `+` means "one or more" in these patterns.
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+  # How mirror.yml has a version of ours built with Telegraf releases that
+  # appeared since: it dispatches this on the version's tag. A dispatch on
+  # anything but a matching tag fails the tag check below.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One run per version of ours at a time, queued rather than cancelled: two runs
+# would race to publish the same build, and a cancelled one could stop half way
+# through a push.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  config:
+    name: Check the tag
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+
+      - run: |
+          set -euo pipefail
+          expected=$(rake --silent image:release_ref)
+          if [ "$GITHUB_REF_TYPE" != tag ] || [ "$GITHUB_REF_NAME" != "$expected" ]; then
+            echo "::error::$GITHUB_REF_NAME is not the release tag of this version, which is $expected. Release with rake release." >&2
+            exit 1
+          fi
+
+  # Skipped when mirror.yml dispatched this run: the tag was tested when it was
+  # first released, and the publish job builds and verifies every build it
+  # pushes anyway. A pushed tag, or a dispatch by a person, still runs CI.
+  # Should the actor ever not match, CI simply runs again.
+  ci:
+    name: CI
+    if: github.event_name != 'workflow_dispatch' || github.actor != 'github-actions[bot]'
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: Build, verify and push every new build
+    runs-on: ubuntu-24.04
+    needs: [config, ci]
+    # A skipped need skips this job by default, so accept a skipped CI
+    # explicitly — but never a failed or cancelled one.
+    if: >-
+      !cancelled() && needs.config.result == 'success' &&
+      (needs.ci.result == 'success' || needs.ci.result == 'skipped')
+    # One build per Telegraf release, each built and verified on both
+    # platforms, one after the other.
+    timeout-minutes: 360
+    # Where the Docker Hub credentials live. Environment secrets reach only the
+    # jobs that name their environment, so this line is what makes them visible
+    # here — without it they silently resolve to empty and the login fails on
+    # "Username and password required". The environment's own policy restricts
+    # it to `v*` tags, so no branch build can claim them.
+    environment: release
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+
+      # `rake image:build` loads a multi-platform image into the daemon, which
+      # the classic image store cannot hold — it keeps one platform per tag.
+      # The runners ship with it, so switch the daemon to the containerd image
+      # store before anything touches Docker.
+      - name: Enable the containerd image store
+        run: |
+          set -euo pipefail
+          sudo mkdir -p /etc/docker
+          echo '{"features":{"containerd-snapshotter":true}}' \
+            | sudo tee /etc/docker/daemon.json > /dev/null
+          sudo systemctl restart docker
+          docker info --format '{{json .DriverStatus}}' | grep -q containerd.snapshotter
+
+      - uses: docker/setup-qemu-action@v4
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build, verify and push every new build
+        run: rake builds:publish
