@@ -12,8 +12,8 @@
 # truth for versions. The defaults here only keep a bare `docker build` working
 # and are kept in sync with that file by hand.
 
-ARG TELEGRAF_VERSION=1.40.0
-ARG BASE_DIGEST=sha256:de158bd5b050cbb763fdc921bd01c8faf85408317176ccbcca2ca514debbaa1f
+ARG TELEGRAF_VERSION=1.40.2
+ARG BASE_DIGEST=sha256:d3b22c2bd211fd613e4a87b0ca0f74f20b9a7f2b1be3c6e867e98a6d4a51545e
 
 # Pinned by digest, not just by tag. A tag is mutable — upstream rebuilds
 # 1.40.2-alpine in place whenever Alpine moves — so the tag alone made the base
@@ -141,7 +141,7 @@ USER telegraf
 ENTRYPOINT ["/sbin/tini", "--", "/usr/bin/telegraf"]
 CMD []
 
-ARG IMAGE_VERSION=1.40.0-alpine.0
+ARG IMAGE_VERSION=1.40.2-alpine.0
 ARG SOURCE_COMMIT=unknown
 # Redeclared because an ARG set before FROM is out of scope after it. The
 # labels' TELEGRAF_VERSION needs no such line only because the base image
