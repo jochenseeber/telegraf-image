@@ -854,10 +854,10 @@ end
 
 IMAGE = Image.new(
   repository: "jochen/telegraf",
-  telegraf_version: "1.40.0",
+  telegraf_version: "1.40.1",
   # The manifest list behind telegraf:<version>-alpine. `rake image:versions`
   # prints the tag's current one.
-  base_digest: "sha256:de158bd5b050cbb763fdc921bd01c8faf85408317176ccbcca2ca514debbaa1f",
+  base_digest: "sha256:6606553b5019151de171984e9ce938eac859d6987aa5329c420597737bf1a9a0",
   # Bumped when the image changes but Telegraf does not; reset on a version bump.
   revision: 0,
   platforms: ["linux/amd64", "linux/arm64"].map { |text| Image::Platform.parse(text) },

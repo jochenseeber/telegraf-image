@@ -5,7 +5,7 @@ disk SMART attributes from Kubernetes nodes. Both SMART plugins work out of the
 box: [`inputs.smartctl`][smartctl-plugin] and the older
 [`inputs.smart`][smart-plugin].
 
-Published as **`jochen/telegraf:1.40.0-alpine.0`**.
+Published as **`jochen/telegraf:1.40.1-alpine.0`**.
 
 Versions are semantic: `1.40.0` is the upstream Telegraf release, and the
 `alpine.0` prerelease names the variant and counts rebuilds of it. One string
