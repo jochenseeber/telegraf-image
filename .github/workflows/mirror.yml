@@ -1,0 +1,75 @@
+# Mirror upstream Telegraf releases
+#
+# Keeps a release line, branch <version>-alpine.x, for every
+# telegraf:<version>-alpine at or above the Rakefile's floor, and releases the
+# next revision on it whenever the upstream base or the Alpine packages move.
+# Versions are handled oldest first and the first failure stops the run, so a
+# release never overtakes an older one. See README.md, "Mirroring upstream
+# releases".
+name: Mirror
+
+on:
+  schedule:
+    - cron: "23 5 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Verify what would be released, without committing, tagging or publishing
+        type: boolean
+        default: false
+
+permissions: {}
+
+# One run at a time, queued rather than cancelled: two runs would race for the
+# same version's next revision, and a cancelled one could stop between pushing
+# a tag and publishing it.
+concurrency:
+  group: mirror
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Release moved upstream versions
+    runs-on: ubuntu-24.04
+    # Serial by design, and each release waits for its publish run.
+    timeout-minutes: 360
+    permissions:
+      contents: write # push release branches and tags
+      actions: write # dispatch the release workflow and watch it
+    steps:
+      # Every branch and tag: they are the record of what has been released.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+
+      # As in release.yml: `rake test` loads a multi-platform image, which the
+      # classic image store cannot hold.
+      - name: Enable the containerd image store
+        run: |
+          set -euo pipefail
+          sudo mkdir -p /etc/docker
+          echo '{"features":{"containerd-snapshotter":true}}' \
+            | sudo tee /etc/docker/daemon.json > /dev/null
+          sudo systemctl restart docker
+          docker info --format '{{json .DriverStatus}}' | grep -q containerd.snapshotter
+
+      - uses: docker/setup-qemu-action@v4
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Configure the commit identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # No Docker Hub login: this only pulls public images. Publishing happens
+      # in release.yml, the one workflow that holds the push token.
+      - name: Release
+        env:
+          DRY_RUN: ${{ inputs.dry_run || false }}
+          GH_TOKEN: ${{ github.token }}
+        run: rake mirror:sync
