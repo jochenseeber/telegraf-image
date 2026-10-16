@@ -355,8 +355,10 @@ builds, verifies and pushes — the same `rake image:push` a workstation runs.
 
 The mirror's tags reach it differently: a tag pushed with the workflow token
 starts no workflows, so the mirror dispatches `release.yml` on the tag instead.
-The run is the same; a dispatch on anything but a matching tag fails its tag
-check.
+A dispatch on anything but a matching tag fails its tag check. Such a run skips
+the CI job, because the mirror already built and verified that exact commit
+before tagging it; the publish job still builds and verifies before it pushes.
+A release a person starts, by tag or by dispatch, runs CI as usual.
 
 `image:publish` is a plain `docker push` of the image already in the local
 daemon, not a second build to the registry. So the bytes that reach Docker Hub

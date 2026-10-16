@@ -44,14 +44,24 @@ jobs:
             exit 1
           fi
 
+  # Skipped when mirror.yml dispatched this run: the mirror ran the same build
+  # and checks on this exact commit before tagging it, so a third build here
+  # adds nothing. Any other start — a pushed tag, a dispatch by a person — still
+  # runs CI. Should the actor ever not match, CI simply runs again.
   ci:
     name: CI
+    if: github.event_name != 'workflow_dispatch' || github.actor != 'github-actions[bot]'
     uses: ./.github/workflows/ci.yml
 
   publish:
     name: Build, verify and push ${{ needs.config.outputs.reference }}
     runs-on: ubuntu-24.04
     needs: [config, ci]
+    # A skipped need skips this job by default, so accept a skipped CI
+    # explicitly — but never a failed or cancelled one.
+    if: >-
+      !cancelled() && needs.config.result == 'success' &&
+      (needs.ci.result == 'success' || needs.ci.result == 'skipped')
     # Where the Docker Hub credentials live. Environment secrets reach only the
     # jobs that name their environment, so this line is what makes them visible
     # here — without it they silently resolve to empty and the login fails on

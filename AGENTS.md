@@ -125,7 +125,12 @@ covers what it does; these are the constraints on changing it.
   later release would then land while an earlier one is broken.
 - **Verified before committed.** `rake test` runs in the line's worktree before
   anything is committed or tagged, so a base this image cannot handle leaves no
-  tag behind. Do not move the commit before it.
+  tag behind. Do not move the commit before it — and do not drop it as a
+  duplicate: `release.yml` skips its CI job for runs the mirror dispatched
+  (`github.actor == 'github-actions[bot]'`), so the mirror's run is the CI for
+  its releases. The skip fails safe: an actor that does not match just runs CI.
+  Release lines carry the `release.yml` of the commit they forked from, so
+  lines older than this rule still run CI until `main` is merged into them.
 - **Published by dispatch, not by the tag push.** A tag pushed with the
   workflow token starts no workflows; `workflow_dispatch` is the exception. So
   the mirror dispatches `release.yml` on the tag and waits for it. Removing
