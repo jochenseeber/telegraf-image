@@ -1131,7 +1131,7 @@ IMAGE = Image.new(
   # base below. `X.Y.Z-dev` between releases; `rake release` commits and tags
   # `X.Y.Z`, and the tag is what has the mirror build it with every tracked
   # Telegraf release.
-  own_version: "1.0.0-dev",
+  own_version: "1.1.0-dev",
   # The Telegraf release this checkout builds, and the digest of its base: what
   # differs between the builds of one version of ours, and what the mirror
   # writes on each build's branch. Here, what CI tests a version of ours with.
