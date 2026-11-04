@@ -9,7 +9,7 @@ the box — [`inputs.smartctl`][smartctl-plugin] and the older
 wrapper: the image ships none of those tools, so there is no version skew
 between image and node.
 
-Published as **`jochen/telegraf:1.40.0_image.1.0.0-dev`**.
+Published as **`jochen/telegraf:1.40.0_image.1.0.0`**.
 
 Each image is a **build** of two versions: this project's, `1.0.0`, and the
 Telegraf release it is built on, `1.40.2` — named `1.40.2+image.1.0.0`:

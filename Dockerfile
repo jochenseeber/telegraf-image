@@ -222,7 +222,7 @@ USER 100
 ENTRYPOINT ["/sbin/tini", "--", "/usr/bin/telegraf"]
 CMD []
 
-ARG IMAGE_VERSION=1.40.0+image.1.0.0-dev
+ARG IMAGE_VERSION=1.40.0+image.1.0.0
 ARG SOURCE_COMMIT=unknown
 # Redeclared because an ARG set before FROM is out of scope after it. The
 # labels' TELEGRAF_VERSION needs no such line only because the base image
